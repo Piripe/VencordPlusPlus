@@ -1,0 +1,45 @@
+name: Sync Fork
+
+on:
+    schedule:
+        # Runs at 12:00 UTC every day
+        - cron: "0 12 * * *"
+    workflow_dispatch:
+        inputs:
+            branch:
+                description: "Branch to push changes to"
+                required: true
+                default: "main"
+
+jobs:
+    sync:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout fork repository
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ github.event.inputs.branch }}
+
+            - name: Add Piripe/VencordPlusPlus as remote
+              run: git remote add upstream https://github.com/Piripe/VencordPlusPlus.git
+
+            - name: Add Vendicated/Vencord as remote
+              run: git remote add upstream2 https://github.com/Vendicated/Vencord.git
+
+            - name: Fetch updates from Piripe/VencordPlusPlus
+              run: git fetch upstream
+
+            - name: Fetch updates from Vendicated/Vencord
+              run: git fetch upstream2
+
+            - name: Merge updates from Piripe/VencordPlusPlus
+              run: |
+                  git checkout ${{ github.event.inputs.branch }}
+                  git merge upstream/main -m "Merge updates from VencordPlusPlus"
+
+            - name: Merge updates from Vendicated/Vencord
+              run: |
+                  git merge upstream2/main -m "Merge updates from Vencord"
+
+            - name: Push changes to fork
+              run: git push origin ${{ github.event.inputs.branch }}
